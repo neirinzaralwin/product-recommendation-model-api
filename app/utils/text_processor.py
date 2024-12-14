@@ -3,11 +3,11 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem.wordnet import WordNetLemmatizer
 import string
+from app.utils.nltk_downloader import download_nltk_data
+
 
 # Download required NLTK data
-nltk.download("stopwords")
-nltk.download("punkt")
-nltk.download("wordnet")
+download_nltk_data()
 
 class TextProcessor:
     def __init__(self):

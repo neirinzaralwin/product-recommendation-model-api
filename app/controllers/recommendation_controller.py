@@ -1,11 +1,10 @@
-from fastapi import HTTPException
 from app.models.schemas import RecommendationRequest, RecommendationResponse, ProductRecommendation
 from app.services.recommendation_service import RecommendationService
 from app.utils.exceptions import CustomException
 
 class RecommendationController:
     def __init__(self):
-        self.recommendation_service = RecommendationService()
+        self.recommendation_service = RecommendationService()    
 
     async def get_recommendations(self, request: RecommendationRequest) -> RecommendationResponse:
         try:

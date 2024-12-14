@@ -8,7 +8,6 @@ async def custom_exception_handler(request: Request, exc: CustomException):
         content={
             "statusCode": exc.status_code,
             "message": exc.message,
-            "error": exc.error
         }
     )
 
@@ -17,7 +16,6 @@ async def general_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={
             "statusCode": 500,
-            "message": "Internal server error",
-            "error": str(exc)
+            "message": f"Internal server error - {exc}",
         }
     )
