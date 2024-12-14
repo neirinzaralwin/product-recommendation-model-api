@@ -9,14 +9,19 @@ from app.controllers.recommendation_controller import RecommendationController
 router = APIRouter()
 recommendation_controller = RecommendationController()
 
-@router.get(
-    "/",
-    summary="Root endpoint",
-    description="Returns a welcome message",
-    response_description="Welcome message"
+@router.post(
+        "/force_update_model",
+        summary="Force update model",
+        description="Force update the recommendation model",
+        responses={
+            500: {
+                "model": ErrorResponse,
+                "description": "Internal server error"
+            }
+        }
 )
-async def root():
-    return await recommendation_controller.get_welcome_message()
+async def force_update_model():
+    return await recommendation_controller.force_update_model()
 
 @router.post(
     "/predict",

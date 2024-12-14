@@ -8,7 +8,7 @@ class RecommendationController:
 
     async def force_update_model(self):
         try:
-            self.recommendation_service.force_model_update()
+            await self.recommendation_service.force_model_update()
             return {"status_code": 200 , "message": "Model updated successfully"}
         except Exception as e:
             raise CustomException(
