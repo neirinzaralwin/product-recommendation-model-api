@@ -1,3 +1,4 @@
 data/model
 myenv
 app/__pycache__
+app/data

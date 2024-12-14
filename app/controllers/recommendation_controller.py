@@ -6,6 +6,16 @@ class RecommendationController:
     def __init__(self):
         self.recommendation_service = RecommendationService()    
 
+    async def force_update_model(self):
+        try:
+            self.recommendation_service.force_model_update()
+            return {"status_code": 200 , "message": "Model updated successfully"}
+        except Exception as e:
+            raise CustomException(
+                status_code=500,
+                message="An unexpected error occurred in force updating model",
+            )    
+
     async def get_recommendations(self, request: RecommendationRequest) -> RecommendationResponse:
         try:
             if not request.product_name.strip():
