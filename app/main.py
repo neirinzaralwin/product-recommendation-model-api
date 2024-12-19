@@ -2,12 +2,15 @@ from fastapi import FastAPI
 from app.routes import recommendation_route
 from app.utils.exceptions import CustomException
 from app.utils.exception_handlers import custom_exception_handler, general_exception_handler
+from app.plugins.mongo_db_plugin import connect_to_mongo_db
 
 app = FastAPI(
     title="Product Recommendation API",
     description="API for getting product recommendations based on content similarity",
     version="1.0.0"
 )
+
+connect_to_mongo_db(app)
 
 # Register exception handlers
 app.add_exception_handler(CustomException, custom_exception_handler)
