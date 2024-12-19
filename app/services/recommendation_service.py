@@ -3,10 +3,11 @@ import joblib
 import os
 import hashlib
 from datetime import datetime
+from pymongo import MongoClient
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from app.utils.data_preprocessor import DataPreprocessor
-from app.config import DATA_FILE, MIN_DF, NGRAM_RANGE
+from app.config import  MIN_DF, NGRAM_RANGE, MONGO_URI, DATABASE_NAME
 
 class RecommendationService:
     _instance = None
@@ -23,6 +24,9 @@ class RecommendationService:
     def __init__(self):
         if not self._is_initialized:
             self.preprocessor = DataPreprocessor()
+            self.client = MongoClient(MONGO_URI)
+            self.db = self.client[DATABASE_NAME]
+            self.collection = self.db['products']
             self.tfidf_matrix = None
             self.cosine_sim = None
             self.indices = None
@@ -30,22 +34,32 @@ class RecommendationService:
             self.load_or_initialize_model()
             RecommendationService._is_initialized = True
 
+    def fetch_data_from_mongo(self):
+        try:
+            documents = list(self.collection.find({}, {"_id": 0}))
+            return pd.DataFrame(documents)
+        except Exception as e:
+            print(f"Error in fetching data from MongoDB: {str(e)}")
+            raise        
+
     def calculate_file_hash(self):
-        """Calculate MD5 hash of the CSV file"""
         hash_md5 = hashlib.md5()
-        with open(DATA_FILE, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_md5.update(chunk)
+        try:
+            documents = list(self.collection.find({}, {"_id": 0}))
+            for doc in documents:
+                # Convert document to string and update hash
+                hash_md5.update(str(doc).encode('utf-8'))
+        except Exception as e:
+            print(f"Error in calculating hash from MongoDB: {str(e)}")
+            raise
         return hash_md5.hexdigest()
 
     def save_hash(self, file_hash):
-        """Save hash to file"""
         os.makedirs(self.MODEL_DIR, exist_ok=True)
         with open(self.HASH_PATH, 'w') as f:
             f.write(file_hash)
 
     def load_hash(self):
-        """Load saved hash"""
         try:
             with open(self.HASH_PATH, 'r') as f:
                 return f.read().strip()
@@ -53,13 +67,11 @@ class RecommendationService:
             return None
 
     def is_data_modified(self):
-        """Check if CSV file has been modified"""
         current_hash = self.calculate_file_hash()
         saved_hash = self.load_hash()
         return saved_hash != current_hash
 
     def load_or_initialize_model(self):
-        """Load model from disk if exists and data unchanged, otherwise initialize and save"""
         try:
             if os.path.exists(self.MODEL_PATH) and not self.is_data_modified():
                 print("Loading existing model...")
@@ -72,7 +84,6 @@ class RecommendationService:
             raise
 
     def load_model(self):
-        """Load model from disk"""
         model_data = joblib.load(self.MODEL_PATH)
         self.tfidf_matrix = model_data['tfidf_matrix']
         self.cosine_sim = model_data['cosine_sim']
@@ -81,12 +92,11 @@ class RecommendationService:
         print("Model loaded successfully")
 
     def initialize_and_save_model(self):
-        """Initialize and save model"""
         start_time = datetime.now()
         print(f"Starting model initialization at {start_time}")
 
         # Read and preprocess data
-        df = pd.read_csv(DATA_FILE, na_values=["No rating available"])
+        df = self.fetch_data_from_mongo()
         smd = self.preprocessor.prepare_data(df)
 
         # Create TF-IDF matrix
@@ -123,7 +133,6 @@ class RecommendationService:
         print(f"Total initialization time: {duration}")
 
     def get_recommendations(self, title: str, num_recommendations: int = 5):
-        """Get recommendations for a given product"""
         try:
             # Check if data has changed
             if self.is_data_modified():
@@ -142,6 +151,5 @@ class RecommendationService:
             return [], []
 
     def force_model_update(self):
-        """Force model update regardless of hash check"""
         print("Forcing model update...")
         self.initialize_and_save_model()
